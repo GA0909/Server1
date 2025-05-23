@@ -1,52 +1,52 @@
-﻿using Xunit;
-using System.Net.Http;
-using System.Text.Json;
+﻿using Server.Models;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
-using CashRegister.Core;
+using Xunit;
 
-public class ApiIntegrationTests
+namespace CashRegister.Test
 {
-    private readonly HttpClient _client;
-
-    public ApiIntegrationTests()
+    public class ApiIntegrationTests
     {
-        _client = new HttpClient
+        private readonly HttpClient _client;
+
+        public ApiIntegrationTests()
         {
-            BaseAddress = new System.Uri("https://localhost:5001/") // Change if your port is different
-        };
-    }
+            _client = new HttpClient
+            {
+                BaseAddress = new System.Uri("https://localhost:5001/") // Change if needed
+            };
+        }
 
-    [Fact]
-    public async Task GetProducts_ReturnsValidList()
-    {
-        var response = await _client.GetAsync("api/products");
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync();
-        var products = JsonSerializer.Deserialize<List<Product>>(json, new JsonSerializerOptions
+        [Fact]
+        public async Task GetProducts_ReturnsValidList()
         {
-            PropertyNameCaseInsensitive = true
-        });
+            var products = await _client.GetFromJsonAsync<List<Product>>("api/products");
+            Assert.NotNull(products);
+            Assert.NotEmpty(products);
+        }
 
-        Assert.NotNull(products);
-        Assert.NotEmpty(products);
-    }
-
-    [Fact]
-    public async Task GetPromotions_ReturnsValidList()
-    {
-        var response = await _client.GetAsync("api/promotions");
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync();
-        var promotions = JsonSerializer.Deserialize<List<Promotion>>(json, new JsonSerializerOptions
+        [Fact]
+        public async Task GetPromotions_ReturnsValidList()
         {
-            PropertyNameCaseInsensitive = true
-        });
+            var promotions = await _client.GetFromJsonAsync<List<Promotion>>("api/promotions");
+            Assert.NotNull(promotions);
+        }
 
-        Assert.NotNull(promotions);
-        // You can remove this if promotions are optional
-        // Assert.NotEmpty(promotions); 
+        [Fact]
+        public async Task GetGiftCards_ReturnsList()
+        {
+            var giftCards = await _client.GetFromJsonAsync<List<GiftCard>>("api/giftcards");
+            Assert.NotNull(giftCards);
+        }
+
+        [Fact]
+        public async Task GetLoyaltyCards_ReturnsList()
+        {
+            var loyaltyCards = await _client.GetFromJsonAsync<List<LoyaltyCard>>("api/loyaltycards");
+            Assert.NotNull(loyaltyCards);
+        }
     }
 }
+

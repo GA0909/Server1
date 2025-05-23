@@ -19,7 +19,7 @@ namespace CheckParser.Models
         public decimal? Change { get; set; } // only for cash
 
         // VAT
-        public List<VatLine> VatLines { get; set; } = new List<VatLine>();
+        public List<VATLine> VatLines { get; set; } = new List<VATLine>();
 
         // footer
         public string DocumentCheckNum { get; set; }
@@ -38,7 +38,7 @@ namespace CheckParser.Models
         public string Upc { get; set; }
     }
 
-    public class VatLine
+    public class VATLine
     {
         public int Rate { get; set; }
         public decimal Amount { get; set; }

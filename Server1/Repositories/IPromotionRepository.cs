@@ -1,10 +1,7 @@
-﻿using Server1.Models;
-using System;
+﻿using Server.Models;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Server1.Services
+namespace Server.Services
 {
     public interface IPromotionRepository
     {

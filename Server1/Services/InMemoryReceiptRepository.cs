@@ -1,24 +1,39 @@
-﻿using Server.Services;
-using Server.Models;
-
+﻿using Server.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Server1.Services
+namespace Server.Repositories
 {
     public class InMemoryReceiptRepository : IReceiptRepository
     {
-        private readonly List<Receipt> _store = new();
+        private readonly List<Receipt> _receipts = new();
 
-        public Receipt Add(Receipt receipt)
+        public Receipt Create(Receipt receipt)
         {
-            _store.Add(receipt);
+            _receipts.Add(receipt);
             return receipt;
         }
 
-        // optional, if you want to list receipts
-        public IEnumerable<Receipt> GetAll() => _store;
+        public IEnumerable<Receipt> GetAll() => _receipts;
+
+        public Receipt GetById(Guid id) => _receipts.Find(r => r.Id == id);
+
+        public bool Update(Guid id, Receipt receipt)
+        {
+            var existing = GetById(id);
+            if (existing == null) return false;
+
+            _receipts.Remove(existing);
+            _receipts.Add(receipt);
+
+            return true;
+        }
+
+        public bool Delete(Guid id)
+        {
+            var receipt = GetById(id);
+            return receipt != null && _receipts.Remove(receipt);
+        }
     }
 }
+

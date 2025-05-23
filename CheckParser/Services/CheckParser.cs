@@ -1,9 +1,9 @@
 ﻿
+using CheckParser.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CheckParser.Models;
 
 namespace CheckParser.Services
 {
@@ -151,7 +151,7 @@ namespace CheckParser.Services
                 // VAT
                 c.VatLines = VatRx.Matches(blk)
                                   .Cast<Match>()
-                                  .Select(m => new VatLine
+                                  .Select(m => new VATLine
                                   {
                                       Rate = int.TryParse(m.Groups["rate"].Value, out var r) ? r : 0,
                                       Amount = decimal.Parse(m.Groups["vat"].Value),

@@ -1,15 +1,12 @@
 ﻿// Program.cs in your CheckParser project
+using Server.Models;            // Receipt, ReceiptLine, Payment, VatLine
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CheckParser.Models;        // your Check + subtypes
-using CheckParser.Services;      // your CheckParser
-using Server1.Models;            // ReceiptDto, ReceiptLineDto, PaymentDto, VatLineDto
 
 namespace CheckParser
 {
@@ -30,16 +27,16 @@ namespace CheckParser
             var parser = new Services.CheckParser();
             var checks = parser.ParseAll(text).ToList();
 
-            // 2. Map to your server’s DTO
-            var dtos = checks.Select(ch => new Server.Models.ReceiptDto
+            // 2. Map to server’s Recipets
+            var dtos = checks.Select(ch => new Receipt
             {
                 ReceiptNumber = ch.ReceiptNumber,
                 Timestamp = ch.Time,
                 DocumentType = ch.DocumentType,
                 KvitasNumber = ch.KvitasNumber,
-                PosId = 2,               // or parse from ch.RawText if you captured it
+                PosId = 2,
 
-                Items = ch.Items.Select(i => new Server.Models.ReceiptLineDto
+                Items = ch.Items.Select(i => new ReceiptLine
                 {
                     Upc = i.Upc,
                     Name = i.Name,
@@ -48,7 +45,7 @@ namespace CheckParser
                     Discount = i.Discount
                 }).ToList(),
 
-                Payments = ch.Payments.Select(p => new Server.Models.PaymentDto
+                Payments = ch.Payments.Select(p => new Payment
                 {
                     Method = p.Method,
                     Amount = p.Amount
@@ -56,7 +53,7 @@ namespace CheckParser
 
                 Change = ch.Change,
 
-                VatLines = ch.VatLines.Select(v => new Server.Models.VatLineDto
+                VatLines = ch.VatLines.Select(v => new VatLine
                 {
                     Rate = v.Rate,
                     Base = v.Base,
@@ -64,7 +61,7 @@ namespace CheckParser
                     Total = v.Total
                 }).ToList(),
 
-                RawText = null  // or store the raw block if you captured it
+                RawText = null  // or store the raw block
             }).ToList();
 
             // 3. POST them to the server
@@ -81,7 +78,7 @@ namespace CheckParser
 
                 try
                 {
-                    var resp = await client.PostAsync("api/receiptDto", content);
+                    var resp = await client.PostAsync("api/receipt", content);
                     resp.EnsureSuccessStatusCode();
                     Console.WriteLine($"✔ Posted Receipt {dto.ReceiptNumber}");
                 }

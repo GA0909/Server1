@@ -1,13 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Server1.Models;
-using Server1.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Mvc;
+using Server.Models;
+using Server.Services;
 
-namespace Server1.Controllers
+namespace Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
