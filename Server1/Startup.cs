@@ -1,17 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Server.Repositories;
 using Server.Services;
-using Server1.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Server1
+namespace Server
 {
     public class Startup
     {
@@ -30,7 +25,11 @@ namespace Server1
             services.AddSingleton<IProductRepository, InMemoryProductRepository>();
             services.AddSingleton<IPromotionRepository, InMemoryPromotionRepository>();
             services.AddSingleton<IReceiptRepository, InMemoryReceiptRepository>();
-            services.AddSingleton<IReceiptStorageService, ReceiptStorageService>();
+            services.AddSingleton<IReceiptService, ReceiptService>();
+            services.AddSingleton<IGiftCardRepository, InMemoryGiftCardRepository>();
+            services.AddSingleton<ILoyaltyCardRepository, InMemoryLoyaltyCardRepository>();
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

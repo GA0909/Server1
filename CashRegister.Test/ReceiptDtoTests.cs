@@ -1,9 +1,8 @@
 ﻿using CashRegister.Core;
+using Server.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace CashRegister.Test
@@ -14,7 +13,6 @@ namespace CashRegister.Test
         public void ReceiptDto_BuildsCorrectly_WithBasicData()
         {
             // Arrange
-            var rand = new Random();
             var products = new List<Product>
         {
             new Product { Name = "Item A", Upc = "A1", Price = 20m, Vat = 21 },
@@ -23,19 +21,19 @@ namespace CashRegister.Test
 
             var lines = new List<ReceiptLine>
         {
-            new ReceiptLine { Product = products[0], Quantity = 2, UnitPrice = 20m, Discount = 5m },
-            new ReceiptLine { Product = products[1], Quantity = 1, UnitPrice = 30m, Discount = 0m }
+            new ReceiptLine { Name = products[0].Name, Upc = products[0].Upc, Quantity = 2, UnitPrice = 20m, Discount = 5m },
+            new ReceiptLine { Name = products[1].Name, Upc = products[0].Upc, Quantity = 1, UnitPrice = 30m, Discount = 0m }
         };
 
-            var payments = new List<PaymentEntry>
+            var payments = new List<Payment>
         {
-            new PaymentEntry { Method = "Card", Amount = 65m }
+            new Payment { Method = "Card", Amount = 65m }
         };
 
-            var vatLines = ReceiptCalculator.ComputeVatLines(lines);
+            var vatLines = ReceiptCalculator.ComputeVatLines(lines, products);
 
             // Act
-            var receipt = new ReceiptDto
+            var receipt = new Receipt
             {
                 ReceiptNumber = "123456",
                 Timestamp = DateTime.Now,
@@ -54,32 +52,33 @@ namespace CashRegister.Test
             Assert.Single(receipt.Payments);
             Assert.Equal("Card", receipt.Payments[0].Method);
             Assert.Equal(65m, receipt.Payments[0].Amount);
-            Assert.Equal(1, receipt.VatLines.Count);
+            Assert.Single(receipt.VatLines);
             Assert.Equal(21, receipt.VatLines[0].Rate);
         }
 
         [Fact]
         public void ReceiptDto_HandlesChangeCalculation()
         {
+            var products = new List<Product>
+        {
+            new Product { Name = "Soda", Upc = "A1", Price = 1.50m, Vat = 0 },
+        };
             // Arrange
-            var line = new ReceiptLine
+            var lines = new List<ReceiptLine>
             {
-                Product = new Product { Name = "Soda", Price = 1.50m, Vat = 21 },
-                Quantity = 2,
-                UnitPrice = 1.50m
+                new ReceiptLine { Name = products[0].Name, Quantity = 2, UnitPrice = products[0].Price}
             };
 
-            var lines = new List<ReceiptLine> { line };
-            var payments = new List<PaymentEntry>
+            var payments = new List<Payment>
         {
-            new PaymentEntry { Method = "Cash", Amount = 10.00m }
+            new Payment { Method = "Cash", Amount = 10.00m }
         };
 
             var subTotal = ReceiptCalculator.CalculateTotal(lines);
             var change = payments.Sum(p => p.Amount) - subTotal;
 
             // Act
-            var receipt = new ReceiptDto
+            var receipt = new Receipt
             {
                 ReceiptNumber = "987654",
                 Timestamp = DateTime.Now,
@@ -89,7 +88,7 @@ namespace CashRegister.Test
                 Items = lines,
                 Payments = payments,
                 Change = Math.Round(change, 2),
-                VatLines = ReceiptCalculator.ComputeVatLines(lines)
+                VatLines = ReceiptCalculator.ComputeVatLines(lines, products)
             };
 
             // Assert

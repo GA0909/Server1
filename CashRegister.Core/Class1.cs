@@ -1,61 +1,10 @@
-﻿using System;
+﻿using Server.Models; // All shared models (Product, Promotion, Receipt, etc.) live here
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace CashRegister.Core
 {
-    public class Product
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Upc { get; set; }
-        public decimal Price { get; set; }
-        public double Vat { get; set; }
-    }
-
-    public class Promotion
-    {
-        public int Id { get; set; }
-        public string Description { get; set; }
-        public string Type { get; set; }
-        public decimal Value { get; set; }
-    }
-
-    public class ReceiptLine
-    {
-        public Product Product { get; set; }
-        public int Quantity { get; set; }
-        public decimal UnitPrice { get; set; }
-        public decimal Discount { get; set; }
-    }
-
-    public class PaymentEntry
-    {
-        public string Method { get; set; }
-        public decimal Amount { get; set; }
-    }
-
-    public class VatLineDto
-    {
-        public int Rate { get; set; }
-        public decimal Base { get; set; }
-        public decimal Amount { get; set; }
-        public decimal Total { get; set; }
-    }
-
-    public class ReceiptDto
-    {
-        public string ReceiptNumber { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string DocumentType { get; set; }
-        public int KvitasNumber { get; set; }
-        public int PosId { get; set; }
-        public List<ReceiptLine> Items { get; set; } = new();
-        public List<PaymentEntry> Payments { get; set; } = new();
-        public decimal? Change { get; set; }
-        public List<VatLineDto> VatLines { get; set; } = new();
-    }
-
     public static class PricingEngine
     {
         public static void ApplyPromotions(List<ReceiptLine> lines, List<Promotion> promotions)
@@ -65,20 +14,14 @@ namespace CashRegister.Core
                 foreach (var promo in promotions)
                 {
                     if (promo.Type == "PercentOff")
-                    {
                         line.Discount += line.UnitPrice * line.Quantity * (promo.Value / 100m);
-                    }
                     else if (promo.Type == "OneThirdOff")
-                    {
                         line.Discount += (line.UnitPrice * line.Quantity) / 3m;
-                    }
-                    else if (promo.Type == "FlatOff")
+                    else if (promo.Type == "FlatOff" &&
+                             promo.Description.Contains("on UPC") &&
+                             promo.Description.Split("on UPC")[1].Trim() == line.Upc)
                     {
-                        if (promo.Description.Contains("on UPC") &&
-                            promo.Description.Split("on UPC")[1].Trim() == line.Product.Upc)
-                        {
-                            line.Discount += promo.Value;
-                        }
+                        line.Discount += promo.Value;
                     }
                 }
             }
@@ -89,32 +32,36 @@ namespace CashRegister.Core
     {
         public static decimal CalculateTotal(List<ReceiptLine> lines)
         {
-            return lines.Sum(l => l.UnitPrice * l.Quantity - l.Discount);
+            return lines.Sum(l => l.UnitPrice * l.Quantity - (l.Discount ?? 0));
         }
 
-        public static List<VatLineDto> ComputeVatLines(List<ReceiptLine> lines)
+        public static List<VatLine> ComputeVatLines(List<ReceiptLine> lines, List<Product> products)
         {
-            return lines.GroupBy(l => l.Product.Vat).Select(g =>
+            return lines.GroupBy(line =>
+            {
+                var matchingProduct = products.FirstOrDefault(p => p.Upc == line.Upc);
+                return matchingProduct != null ? (int)matchingProduct.Vat : 0;
+            })
+            .Select(g =>
             {
                 var rate = g.Key;
-                var total = g.Sum(l => l.UnitPrice * l.Quantity - l.Discount);
-                var baseV = total / (1m + (decimal)rate / 100m);
-                var vatAmt = total - baseV;
-                return new VatLineDto
+                var total = g.Sum(l => l.UnitPrice * l.Quantity - (l.Discount ?? 0));
+                var baseVal = total / (1m + (decimal)rate / 100m);
+                return new VatLine
                 {
-                    Rate = (int)rate,
-                    Base = Math.Round(baseV, 2),
-                    Amount = Math.Round(vatAmt, 2),
+                    Rate = rate,
+                    Base = Math.Round(baseVal, 2),
+                    Amount = Math.Round(total - baseVal, 2),
                     Total = Math.Round(total, 2)
                 };
             }).ToList();
         }
     }
 
-    public class PaymentProcessor
+    public class PaymentProcessor //to show remaining price when using multiple payment methods
     {
         public decimal RemainingToPay { get; private set; }
-        public List<PaymentEntry> Payments { get; private set; } = new();
+        public List<Payment> Payments { get; private set; } = new();
         public decimal? Change { get; private set; } = null;
 
         public PaymentProcessor(decimal initialTotal)
@@ -126,7 +73,7 @@ namespace CashRegister.Core
         {
             if (requestedAmount > 0 && requestedAmount <= availableBalance && requestedAmount <= RemainingToPay)
             {
-                Payments.Add(new PaymentEntry { Method = $"GiftCard-{cardId}", Amount = requestedAmount });
+                Payments.Add(new Payment { Method = $"GiftCard-{cardId}", Amount = requestedAmount });
                 RemainingToPay -= requestedAmount;
                 return true;
             }
@@ -137,7 +84,7 @@ namespace CashRegister.Core
         {
             if (requestedAmount > 0 && requestedAmount <= availableBalance && requestedAmount <= RemainingToPay)
             {
-                Payments.Add(new PaymentEntry { Method = $"LoyaltyCard-{loyaltyId}", Amount = requestedAmount });
+                Payments.Add(new Payment { Method = $"LoyaltyCard-{loyaltyId}", Amount = requestedAmount });
                 RemainingToPay -= requestedAmount;
                 return true;
             }
@@ -148,7 +95,7 @@ namespace CashRegister.Core
         {
             if (amount > 0 && amount <= RemainingToPay)
             {
-                Payments.Add(new PaymentEntry { Method = "Card", Amount = amount });
+                Payments.Add(new Payment { Method = "Card", Amount = amount });
                 RemainingToPay -= amount;
             }
         }
@@ -157,7 +104,7 @@ namespace CashRegister.Core
         {
             if (providedAmount >= RemainingToPay)
             {
-                Payments.Add(new PaymentEntry { Method = "Cash", Amount = providedAmount });
+                Payments.Add(new Payment { Method = "Cash", Amount = providedAmount });
                 Change = providedAmount - RemainingToPay;
                 RemainingToPay = 0;
             }

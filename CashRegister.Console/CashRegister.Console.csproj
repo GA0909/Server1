@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CashRegister.Core\CashRegister.Core.csproj" />
     <ProjectReference Include="..\Server1\Server.csproj" />
   </ItemGroup>
 
