@@ -44,6 +44,7 @@ Parses scanned receipts into structured DTOs
 - Applies discounts and VAT detection
 - Outputs structured, server-usable receipts
 - **No sensitive data stored or parsed**
+- Rebuilding checks to compear
 
 ---
 
@@ -121,6 +122,7 @@ dotnet run
 ```bash
 cd CheckParser
 dotnet run -- "PATH_TO_YOUR_RECEIPT_FILE.txt"
+dotnet run REPLICATECHECKS
 ```
 
 * Parses raw .txt receipts into receipt DTOs and pushes them to the API.
